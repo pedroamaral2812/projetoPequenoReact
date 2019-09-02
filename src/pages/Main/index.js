@@ -12,6 +12,7 @@ export default class Main extends Component {
     newRepo: '',
     repositories: [],
     loading: false,
+    error: null
   };
 
   // Carregar os dados do localStorage
@@ -41,23 +42,32 @@ export default class Main extends Component {
 
     this.setState({loading: true});
 
-    const { newRepo, repositories } = this.state; 
+    try {
+      const { newRepo, repositories } = this.state; 
 
-    const response = await api.get(`/repos/${newRepo}`);
+      /** Verifica se o repositorio não está duplicado */
+      const hasRepo = repositories.find(r => r.name === newRepo);
+      if (hasRepo) throw 'Repositório duplicado';
 
-    const data = {
-      name: response.data.full_name
-    };
+      const response = await api.get(`/repos/${newRepo}`);
+  
+      const data = {
+        name: response.data.full_name
+      };
+  
+      this.setState({
+        repositories: [...repositories, data],
+        newRepo: '',
+        loading: false,
+      })
+    } catch(error){
+      this.setState({ error: true });
+    }
 
-    this.setState({
-      repositories: [...repositories, data],
-      newRepo: '',
-      loading: false,
-    })
   };
 
   render(){
-    const { newRepo, repositories, loading } = this.state;
+    const { newRepo, repositories, loading,error } = this.state;
     return(
       <Container>
         <h1>
@@ -65,7 +75,8 @@ export default class Main extends Component {
           Repositorios
         </h1>
   
-        <Form onSubmit={this.handleSubmit}>
+        
+        <Form onSubmit={this.handleSubmit} error={error}>
           <input 
             type="text"
             placeholder="Adicionar repositorio"
